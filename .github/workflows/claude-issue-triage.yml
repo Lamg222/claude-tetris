@@ -1,0 +1,63 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Triage y diagnóstico del issue
+        id: triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*)"'
+          prompt: |
+            Eres el triager del repositorio ${{ github.repository }}.
+            Acaba de abrirse el issue #${{ github.event.issue.number }}.
+
+            Realiza estos pasos en orden:
+
+            1. Lee el issue con:
+               `gh issue view ${{ github.event.issue.number }}`
+
+            2. Consulta las labels disponibles del repo con:
+               `gh label list`
+               Elige SOLO labels que ya existan. Asigna las que apliquen según el
+               tipo de issue (ej. bug, enhancement, question, documentation) y el
+               área afectada. Aplícalas con:
+               `gh issue edit ${{ github.event.issue.number }} --add-label "label1,label2"`
+
+            3. Diagnostica el problema. Este es un Tetris en JavaScript vanilla con
+               HTML5 Canvas: `index.html`, `style.css`, `game.js` (toda la lógica).
+               Lee los archivos relevantes del repo para entender la causa raíz.
+
+            4. Publica un comentario de diagnóstico en el issue con:
+               `gh issue comment ${{ github.event.issue.number }} --body "..."`
+
+               El comentario debe estar en español e incluir:
+               - **Resumen**: qué reporta el issue en una línea.
+               - **Causa raíz probable**: archivo(s) y, si aplica, función/línea
+                 implicada.
+               - **Solución propuesta**: pasos concretos para corregirlo, con
+                 referencias a `archivo:línea`.
+               - **Riesgos / dudas**: ambigüedades o información faltante.
+
+               Este diagnóstico servirá de base para generar luego el código de la
+               solución, así que sé preciso y accionable.
+
+            No modifiques código ni abras PRs en este flujo: solo etiquetar y
+            diagnosticar.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
