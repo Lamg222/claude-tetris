@@ -46,8 +46,21 @@ function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
+// 7-bag randomizer (Tetris Guideline): cada tanda de 7 contiene las 7 piezas
+// barajadas, evitando sequías y repeticiones largas del random puro.
+let bag = [];
+
+function refillBag() {
+  bag = [1, 2, 3, 4, 5, 6, 7];
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+
 function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+  if (bag.length === 0) refillBag();
+  const type = bag.pop();
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -266,6 +279,7 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  bag = [];
   next = randomPiece();
   spawn();
   updateHUD();
