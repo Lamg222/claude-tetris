@@ -184,3 +184,9 @@ Algunos parámetros fáciles de tunear en `game.js`:
 ## Licencia
 
 Proyecto de uso libre con fines educativos y de práctica.
+
+## Mecánicas avanzadas
+
+- **7-bag randomizer**: cada tanda de 7 piezas contiene las 7 tetrominós barajadas (evita sequías).
+- **Récord persistente**: la mejor puntuación se guarda en el navegador (localStorage) y sobrevive recargas.
+- **Ghost piece**: sombra que muestra dónde caerá la pieza.
