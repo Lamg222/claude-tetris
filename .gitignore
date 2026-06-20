@@ -1,1 +1,9 @@
-.DS_STORE
+# OS
+.DS_Store
+Thumbs.db
+# Editor
+.vscode/
+.idea/
+*.swp
+# Logs
+*.log
