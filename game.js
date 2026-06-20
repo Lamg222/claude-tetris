@@ -231,11 +231,20 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function bestScore() {
+  return parseInt(localStorage.getItem('tetris-best') || '0', 10);
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  const prevBest = bestScore();
+  const isRecord = score > prevBest;
+  if (isRecord) localStorage.setItem('tetris-best', String(score));
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = isRecord
+    ? `¡Nuevo récord! ${score.toLocaleString()}`
+    : `Puntuación: ${score.toLocaleString()} · Récord: ${prevBest.toLocaleString()}`;
   overlay.classList.remove('hidden');
 }
 
