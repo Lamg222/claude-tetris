@@ -44,10 +44,30 @@
       </aside>
     </div>
 
+    <!-- Pantalla de inicio: muestra los records y arranca la partida -->
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box">
+        <p class="scores-title">MEJORES PUNTUACIONES</p>
+        <div id="start-scores" class="scores"></div>
+        <button id="start-btn">Empezar</button>
+        <button id="reset-scores-btn" class="reset-btn">Resetear records</button>
+      </div>
+    </div>
+
+    <!-- Overlay reutilizado para PAUSA y GAME OVER -->
     <div id="overlay" class="overlay hidden">
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+
+        <!-- Formulario de nombre: visible solo si la puntuación entra al top -->
+        <form id="name-form" class="hidden">
+          <label for="name-input">¡Nuevo record! Tu nombre:</label>
+          <input id="name-input" type="text" maxlength="12" autocomplete="off" placeholder="Anónimo" />
+          <button type="submit">Guardar</button>
+        </form>
+
+        <div id="overlay-scores" class="scores"></div>
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>

@@ -28,6 +28,10 @@ const PIECES = [
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+// ---- Tabla de records (localStorage) ----
+const HIGHSCORES_KEY = 'tetris-highscores';
+const MAX_SCORES = 5;
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -40,7 +44,18 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
+// Elementos de la tabla de records (start screen + game over).
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const startScoresEl = document.getElementById('start-scores');
+const overlayScoresEl = document.getElementById('overlay-scores');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const resetScoresBtn = document.getElementById('reset-scores-btn');
+
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+// Mejor combo (máximo de líneas eliminadas en un solo lock) de la partida en curso.
+let maxCombo;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -105,6 +120,7 @@ function clearLines() {
   }
   if (cleared) {
     lines += cleared;
+    if (cleared > maxCombo) maxCombo = cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
@@ -204,7 +220,8 @@ function draw() {
   // current piece
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
-      drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
+      if (current.shape[r][c])
+        drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
 }
 
 function drawNext() {
@@ -218,11 +235,130 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+// ---- Persistencia de records ----
+
+// Lee la tabla de records desde localStorage. Tolera ausencia o JSON corrupto.
+function loadHighscores() {
+  try {
+    const raw = localStorage.getItem(HIGHSCORES_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(e => e && typeof e === 'object')
+      .map(e => ({
+        name: typeof e.name === 'string' ? e.name : '---',
+        score: Number(e.score) || 0,
+        lines: Number(e.lines) || 0,
+        combo: Number(e.combo) || 0,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_SCORES);
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveHighscores(list) {
+  try {
+    localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(list));
+  } catch (err) {
+    // localStorage no disponible (modo privado, cuota, etc.): se ignora.
+  }
+}
+
+// ¿La puntuación entra en el top? (true también si la tabla aún no está llena).
+function qualifiesForTop(value) {
+  if (value <= 0) return false;
+  const list = loadHighscores();
+  if (list.length < MAX_SCORES) return true;
+  return value > list[list.length - 1].score;
+}
+
+// Inserta un record y devuelve la tabla recortada al top.
+function addHighscore(entry) {
+  const list = loadHighscores();
+  list.push(entry);
+  list.sort((a, b) => b.score - a.score);
+  const top = list.slice(0, MAX_SCORES);
+  saveHighscores(top);
+  return top;
+}
+
+// Renderiza la tabla de records dentro de un contenedor.
+// highlightIndex (opcional) resalta la fila recién añadida.
+function renderScores(container, list, highlightIndex) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (!list.length) {
+    const empty = document.createElement('p');
+    empty.className = 'scores-empty';
+    empty.textContent = 'Sin records todavía';
+    container.appendChild(empty);
+    return;
+  }
+  const table = document.createElement('table');
+  table.className = 'scores-table';
+  const header = document.createElement('tr');
+  header.innerHTML = '<th>#</th><th>Nombre</th><th>Puntos</th><th>Líneas</th><th>Combo</th>';
+  table.appendChild(header);
+  list.forEach((e, i) => {
+    const tr = document.createElement('tr');
+    if (i === highlightIndex) tr.className = 'highlight';
+    const rank = document.createElement('td');
+    rank.textContent = i + 1;
+    const name = document.createElement('td');
+    name.textContent = e.name;
+    const sc = document.createElement('td');
+    sc.textContent = e.score.toLocaleString();
+    const ln = document.createElement('td');
+    ln.textContent = e.lines;
+    const cb = document.createElement('td');
+    cb.textContent = e.combo;
+    tr.append(rank, name, sc, ln, cb);
+    table.appendChild(tr);
+  });
+  container.appendChild(table);
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+
+  // Snapshot de la partida que se acaba de terminar.
+  const finalScore = score;
+  const finalLines = lines;
+  const finalCombo = maxCombo;
+
+  if (qualifiesForTop(finalScore)) {
+    // Entra en el top: pedimos el nombre antes de registrar.
+    renderScores(overlayScoresEl, loadHighscores());
+    nameForm.classList.remove('hidden');
+    nameInput.value = '';
+
+    // Guarda contra reenvíos: solo se registra el record una vez por partida.
+    let saved = false;
+    const submit = (ev) => {
+      ev.preventDefault();
+      if (saved) return;
+      saved = true;
+      const name = (nameInput.value.trim() || 'Anónimo').slice(0, 12);
+      const top = addHighscore({ name, score: finalScore, lines: finalLines, combo: finalCombo });
+      const idx = top.findIndex(
+        e => e.name === name && e.score === finalScore && e.lines === finalLines && e.combo === finalCombo
+      );
+      nameForm.onsubmit = null;
+      nameForm.classList.add('hidden');
+      renderScores(overlayScoresEl, top, idx);
+    };
+    nameForm.onsubmit = submit;
+  } else {
+    nameForm.classList.add('hidden');
+    renderScores(overlayScoresEl, loadHighscores());
+  }
+
   overlay.classList.remove('hidden');
 }
 
@@ -236,6 +372,8 @@ function togglePause() {
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
+    nameForm.classList.add('hidden');
+    if (overlayScoresEl) overlayScoresEl.innerHTML = '';
     overlay.classList.remove('hidden');
   }
 }
@@ -253,7 +391,7 @@ function loop(ts) {
     }
   }
   draw();
-  animId = requestAnimationFrame(loop);
+  if (!gameOver && !paused) animId = requestAnimationFrame(loop);
 }
 
 function init() {
@@ -261,6 +399,7 @@ function init() {
   score = 0;
   lines = 0;
   level = 1;
+  maxCombo = 0;
   paused = false;
   gameOver = false;
   dropInterval = 1000;
@@ -270,6 +409,8 @@ function init() {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  nameForm.classList.add('hidden');
+  if (overlayScoresEl) overlayScoresEl.innerHTML = '';
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
@@ -301,4 +442,22 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
-init();
+// ---- Pantalla de inicio y reseteo de records ----
+
+// Comienza la partida ocultando la pantalla de inicio.
+function startGame() {
+  if (startScreen) startScreen.classList.add('hidden');
+  init();
+}
+
+if (startBtn) startBtn.addEventListener('click', startGame);
+
+if (resetScoresBtn) {
+  resetScoresBtn.addEventListener('click', () => {
+    saveHighscores([]);
+    renderScores(startScoresEl, []);
+  });
+}
+
+// Pinta la tabla en la pantalla de inicio y espera a que el jugador la inicie.
+renderScores(startScoresEl, loadHighscores());
