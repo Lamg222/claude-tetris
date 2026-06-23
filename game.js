@@ -18,7 +18,7 @@ const SKINS = {
       '#ba68c8', // T - purple
       '#81c784', // S - green
       '#e57373', // Z - red
-      '#7986cb', // J - indigo
+      '#5b9bd5', // J - azul pálido
       '#ffb74d', // L - orange
     ],
     // Bloque cuadrado con highlight superior (estilo original).
@@ -198,8 +198,21 @@ function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
+// 7-bag randomizer (Tetris Guideline): cada tanda de 7 contiene las 7 piezas
+// barajadas, evitando sequías y repeticiones largas del random puro.
+let bag = [];
+
+function refillBag() {
+  bag = [1, 2, 3, 4, 5, 6, 7];
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+
 function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+  if (bag.length === 0) refillBag();
+  const type = bag.pop();
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -318,7 +331,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--grid-line').trim();
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -369,6 +382,11 @@ function drawNext() {
 }
 
 // ---- Persistencia de records ----
+
+// Mejor puntuación histórica (registro simple en localStorage, 'tetris-best').
+function bestScore() {
+  return parseInt(localStorage.getItem('tetris-best') || '0', 10);
+}
 
 // Lee la tabla de records desde localStorage. Tolera ausencia o JSON corrupto.
 function loadHighscores() {
@@ -457,8 +475,13 @@ function renderScores(container, list, highlightIndex) {
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  const prevBest = bestScore();
+  const isRecord = score > prevBest;
+  if (isRecord) localStorage.setItem('tetris-best', String(score));
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = isRecord
+    ? `¡Nuevo récord! ${score.toLocaleString()}`
+    : `Puntuación: ${score.toLocaleString()} · Récord: ${prevBest.toLocaleString()}`;
 
   // Snapshot de la partida que se acaba de terminar.
   const finalScore = score;
@@ -587,6 +610,7 @@ function init() {
   dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
+  bag = [];
   next = randomPiece();
   spawn();
   updateHUD();
@@ -666,6 +690,15 @@ if (resetScoresBtn) {
   resetScoresBtn.addEventListener('click', () => {
     saveHighscores([]);
     renderScores(startScoresEl, []);
+  });
+}
+
+// ---- Toggle de tema claro/oscuro de la página ----
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light');
+    themeToggle.textContent = isLight ? 'Modo oscuro' : 'Modo claro';
   });
 }
 
