@@ -7,3 +7,5 @@ Thumbs.db
 *.swp
 # Logs
 *.log
+
+.claude/
