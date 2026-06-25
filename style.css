@@ -164,3 +164,119 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ---- Records ---- */
+.name-entry {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.name-entry.hidden {
+  display: none;
+}
+
+#name-input {
+  background: #1a1a25;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #e0e0e0;
+  width: 130px;
+  outline: none;
+}
+
+#name-input:focus {
+  border-color: #7aa2f7;
+}
+
+#save-score-btn {
+  background: #81c784;
+  color: #0f0f17;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#save-score-btn:hover {
+  background: #a5d6a7;
+}
+
+#records-view {
+  width: 100%;
+}
+
+table.records {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+table.records th {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #555570;
+  text-align: left;
+  padding: 2px 6px;
+  font-weight: 600;
+}
+
+table.records td {
+  padding: 3px 6px;
+  color: #aab;
+  border-top: 1px solid #22223a;
+}
+
+table.records td.rank { color: #555570; width: 24px; }
+table.records td.name { color: #e0e0e0; }
+table.records td.pts  { color: #7aa2f7; text-align: right; font-weight: 700; }
+table.records td.empty { color: #33334a; }
+
+table.records tr.hl td {
+  background: rgba(129, 199, 132, 0.15);
+  color: #81c784;
+}
+table.records tr.hl td.pts { color: #81c784; }
+
+.records-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.records-stats b {
+  color: #ffd54f;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ghost-btn {
+  background: transparent;
+  color: #555570;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ghost-btn:hover {
+  color: #e57373;
+  border-color: #e57373;
+}
+
+.ghost-btn.hidden {
+  display: none;
+}
