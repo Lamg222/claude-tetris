@@ -24,6 +24,7 @@ Todo el estado del juego vive en variables globales de módulo (`board`, `curren
 - **Ciclo de pieza**: `lockPiece()` → `merge()` → `clearLines()` → `spawn()`. Si la pieza nueva colisiona al aparecer, `endGame()`.
 - **Puntuación**: tabla `LINE_SCORES` × nivel; soft drop +1/fila, hard drop +2/celda. Nivel sube cada 10 líneas; velocidad = `max(100, 1000 − (level−1) × 90)` ms.
 - **Render**: `draw()` pinta grid, tablero fijado, ghost piece (proyección con `ghostY()`, alpha 0.2) y pieza actual. `drawNext()` usa el segundo canvas.
+- **Records**: persistidos en `localStorage` bajo `RECORDS_KEY` (`tetris-records`): `{ scores: [{name, score, lines}], bestCombo, maxLines }`. Top 5 (`MAX_SCORES`). `loadRecords`/`saveRecords`/`renderRecords` gestionan el estado; `combo`/`maxCombo` cuentan clears consecutivos en `clearLines`. Pantalla de inicio (`#start-overlay`) muestra records y espera el botón `JUGAR` (el juego ya no arranca solo). `endGame` guarda combo/líneas siempre y, si la puntuación entra al top, pide nombre (`#name-entry`) antes de persistirla.
 
 ## Restricción de dimensiones
 
